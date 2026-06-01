@@ -15,6 +15,10 @@ return [
     // Auth
     'sign_in'           => 'Sign In',
     'sign_in_subtitle'  => 'Sign in with your corporate account',
+    'admin_sign_in'     => 'Administrator Sign In',
+    'admin_sign_in_subtitle' => 'System configuration — administrators only.',
+    'admin_only'        => 'This login is for administrators only. Employees are signed in automatically via Windows.',
+    'employees_use_windows' => 'Employees are signed in automatically through Windows Authentication.',
     'username'          => 'Username',
     'password'          => 'Password',
     'remember_me'       => 'Remember me',

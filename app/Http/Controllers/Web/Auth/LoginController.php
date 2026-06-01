@@ -18,7 +18,10 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    /** Username + password form login (admins and, in dev, seeded users). */
+    /**
+     * Admin-only username + password form login. Employees never use this form —
+     * they are authenticated automatically by IIS Windows Authentication.
+     */
     public function login(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -37,10 +40,21 @@ class LoginController extends Controller
                 ->onlyInput('username');
         }
 
+        // The form is for administrators only.
+        if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()
+                ->withErrors(['username' => __('app.admin_only')])
+                ->onlyInput('username');
+        }
+
         $request->session()->regenerate();
         $request->user()->update(['last_login_at' => now()]);
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(route('admin.settings.edit'));
     }
 
     /** IIS Windows Authentication entry — logs the AD user into the session. */

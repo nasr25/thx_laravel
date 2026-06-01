@@ -27,6 +27,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SetWebLocale::class,
         ]);
 
+        // Unauthenticated visitors are sent to the Windows-auth entrypoint (which
+        // logs employees in transparently via IIS), NOT to the admin login form.
+        // The login form is reached only when Windows auth is unavailable.
+        $middleware->redirectGuestsTo(fn () => route('auth.windows'));
+
         $middleware->alias([
             'admin'              => \App\Http\Middleware\AdminMiddleware::class,
             'super-admin'        => \App\Http\Middleware\SuperAdminMiddleware::class,

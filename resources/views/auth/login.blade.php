@@ -1,8 +1,8 @@
 @extends('layouts.guest')
 
 @section('content')
-    <h2 class="text-lg font-semibold text-gray-900 mb-1">{{ __('app.sign_in') }}</h2>
-    <p class="text-sm text-gray-500 mb-6">{{ __('app.sign_in_subtitle') }}</p>
+    <h2 class="text-lg font-semibold text-gray-900 mb-1">{{ __('app.admin_sign_in') }}</h2>
+    <p class="text-sm text-gray-500 mb-6">{{ __('app.admin_sign_in_subtitle') }}</p>
 
     @if ($errors->any())
         <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-sm">
@@ -31,13 +31,5 @@
         </button>
     </form>
 
-    <div class="relative my-5 text-center">
-        <span class="bg-white px-3 text-xs text-gray-400 relative z-10">—</span>
-        <div class="absolute inset-x-0 top-1/2 border-t border-gray-100"></div>
-    </div>
-
-    <a href="{{ route('auth.windows') }}"
-       class="block text-center w-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg py-2.5 transition">
-        {{ __('app.sign_in_windows') }}
-    </a>
+    <p class="text-center text-xs text-gray-400 mt-6">{{ __('app.employees_use_windows') }}</p>
 @endsection
