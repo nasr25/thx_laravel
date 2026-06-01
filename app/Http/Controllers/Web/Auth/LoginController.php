@@ -7,6 +7,7 @@ use App\Services\AuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class LoginController extends Controller
@@ -64,6 +65,7 @@ class LoginController extends Controller
         $username = $identity !== null ? $this->normalizeWindowsUsername($identity) : null;
 
         if ($username === null) {
+            // resolveWindowsIdentity() has already logged the empty server variables.
             return redirect()->route('login')
                 ->withErrors(['username' => __('app.windows_not_detected')]);
         }
@@ -77,6 +79,12 @@ class LoginController extends Controller
 
             return redirect()->intended(route('dashboard'));
         } catch (\Throwable $e) {
+            Log::error('Windows auto-login failed on /auth/windows', [
+                'identity' => $identity,
+                'username' => $username,
+                'error'    => $e->getMessage(),
+            ]);
+
             return redirect()->route('login')->withErrors(['username' => $e->getMessage()]);
         }
     }
@@ -94,31 +102,30 @@ class LoginController extends Controller
 
     private function resolveWindowsIdentity(Request $request): ?string
     {
-        $candidates = [
-            $_SERVER['LOGON_USER']  ?? null,
-            $_SERVER['AUTH_USER']   ?? null,
-            $_SERVER['REMOTE_USER'] ?? null,
-            $request->server('LOGON_USER'),
-            $request->server('AUTH_USER'),
-            $request->server('REMOTE_USER'),
-            $request->header('X-Windows-User'),
-        ];
+        // Identity is provided EXCLUSIVELY by IIS Windows Authentication.
+        // No machine/environment fallback — that returns the server / app-pool
+        // account name, never the browsing user.
+        $user = $_SERVER['LOGON_USER']
+            ?? $_SERVER['AUTH_USER']
+            ?? $_SERVER['REMOTE_USER']
+            ?? null;
 
-        foreach ($candidates as $value) {
-            if (is_string($value) && trim($value) !== '') {
-                return trim($value);
-            }
+        $user = is_string($user) ? trim($user) : '';
+
+        if ($user === '') {
+            Log::warning('Windows identity not provided by IIS on /auth/windows — '
+                . 'check that Windows Auth is enabled and Anonymous disabled for this path.', [
+                'LOGON_USER'  => $_SERVER['LOGON_USER']  ?? null,
+                'AUTH_USER'   => $_SERVER['AUTH_USER']   ?? null,
+                'REMOTE_USER' => $_SERVER['REMOTE_USER'] ?? null,
+                'AUTH_TYPE'   => $_SERVER['AUTH_TYPE']   ?? null,
+                'ip'          => $request->ip(),
+            ]);
+
+            return null;
         }
 
-        if (app()->isLocal()) {
-            $username = getenv('USERNAME') ?: null;
-            $domain   = getenv('USERDOMAIN') ?: getenv('COMPUTERNAME') ?: null;
-            if ($username && !in_array(strtoupper((string) $domain), ['BUILTIN', 'NT AUTHORITY', ''], true)) {
-                return $domain ? "{$domain}\\{$username}" : $username;
-            }
-        }
-
-        return null;
+        return $user;
     }
 
     private function normalizeWindowsUsername(string $identity): ?string
